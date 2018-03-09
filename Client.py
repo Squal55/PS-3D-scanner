@@ -96,8 +96,8 @@ while True:
         sock.sendto("Acknowledge " + command, address)
         sys.exit()
         
-    elif command == 'status':
-        print("Status")
+    elif command == 'connect':
+        print("Connect")
         sock.sendto("Acknowledge " + command, address)
     
     else:
