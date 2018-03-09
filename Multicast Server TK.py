@@ -1,4 +1,9 @@
-#os.system functies werken niet goed, wel als de actie kort genoeg is. Lijkt zichzelf af te kappen na x tijd/data, vooral Sync functie (DL max ~ 26)
+#Error list:
+#E404: Connection not established
+#E99 : Parameters out of range
+#E2  : Function aborted (user)
+
+#tkmessagebox not working
 
 import socket
 import struct
@@ -7,6 +12,7 @@ import os
 import datetime
 import time
 import tkinter as tk
+from tkinter import messagebox as mb
 from tkinter import *
 
 client_path = r"C:\Users\Public\3dScannerCode\Client.py"
@@ -32,6 +38,8 @@ sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
 def acknowledge(command):
     global connection_number
     global connection_list
+    x = 0
+    
     try:
         # Send data to the multicast group
         sent = sock.sendto(str.encode(command), multicast_group)
@@ -40,6 +48,10 @@ def acknowledge(command):
         while True:
             try:
                 data, server = sock.recvfrom(32)
+                
+                if command[0:5] == "photo" and str(server)[2:16] == connection_list[0]:
+                    x += 1
+                    tk.Label(window, text="{0} photos done".format(x)).grid(column=1, row=0)
                 if command == "connect":
                     connection_number += 1
                     connection_list.append(connection_number)
@@ -79,16 +91,21 @@ def photo():
     global connection_list
     
     if connection_check() == 1:
-        par1 = aantal.get()
+        par1 = amount.get()
         par2 = delay.get()
-        message = ("photo" + " " + par1 + " " + par2)
-        
-        # Send data to the multicast group
-        print ('sending "%s"' % message)
+        if (par1.isdigit() and par2.isdigit()):
+            if (int(par1) <= 50 and float(par2) <= 2):
+                message = ("photo" + " " + par1 + " " + par2)
+                # Send data to the multicast group
+                print ('sending "%s"' % message)
 
-        # Look for responses from all recipients
-        acknowledge(message)
-        return (1)
+                # Look for responses from all recipients
+                acknowledge(message)
+                return (1)
+            print("Parameters out of range, max 50 photos at a 2 second delay.")
+            return(99)
+        print("Wrong input, please enter numbers only.")
+        return(99)
     return (404)
 
 def download():
@@ -101,8 +118,13 @@ def download():
     
         print("Downloading photos")
         na = folder.get()
-        os.system ('mkdir c:\Temp\_pifotos\%s' %na)
-    
+        if not os.path.exists("c:\Temp\_pifotos\%s" %na):
+            os.system ('mkdir c:\Temp\_pifotos\%s' %na)
+        else:
+            result = mb.askquestion("Folder already exists", "Are you sure you wish to overwrite an existing folder?", icon='warning')
+            if result == "no":
+                print("Download aborted")
+                return(2)
         for x in range (0, connection_number+1):
             os.system('pscp.exe -pw protoscan1 pi@{0}:/home/pi/Desktop/photos/*.jpg c:\Temp\_pifotos\{1}\\'.format (connection_list[x], na))
         
@@ -138,15 +160,17 @@ window = tk.Tk()
 window.title("3D Scanner")
 window.geometry("400x400")
 
-aantal = tk.StringVar()
+amount = tk.StringVar()
 delay = tk.StringVar()
 folder = tk.StringVar()
 
-tk.Label(window, text="Aantal").grid(column=0, row=1)
-tk.Entry(window, width=6, textvariable=aantal).grid(column=1, row=1, sticky=W)
+tk.Label(window, text="Amount").grid(column=0, row=1)
+tk.Entry(window, width=6, textvariable=amount).grid(column=1, row=1, sticky=W)
+tk.Label(window, text="max. 50").grid(column=2, row=1, sticky=W)
 
 tk.Label(window, text="Delay").grid(column=0, row=2)
 tk.Entry(window, width=6, textvariable=delay).grid(column=1, row=2, sticky=W)
+tk.Label(window, text="max. 3").grid(column=2, row=2, sticky=W)
 
 tk.Label(window, text="Folder").grid(column=0, row=4)
 tk.Entry(window, width=10, textvariable=folder).grid(column=1, row=4, sticky=W)
