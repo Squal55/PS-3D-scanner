@@ -19,17 +19,6 @@ def clear():
     data = "0"
     command = "0" 
 
-#camera setup
-camera = picamera.PiCamera()
-camera.resolution = (2592, 1944)
-camera.framerate = 30
-camera.brightness = 50
-camera.awb_mode = 'off'
-camera.awb_gains = (1.5,1.5)
-camera.iso = 100
-camera.shutter_speed = 10000
-cameradelay = 0.55
-
 dir = 'Desktop/photos'
 
 multicast_group = '224.0.0.10'
@@ -49,8 +38,9 @@ sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
 # Receive/respond loop
 while True:
-    print ('\nwaiting to receive message')
+    print ('\nwaiting to receive message')   
     data, address = sock.recvfrom(1024)
+
     
     print ('received %s bytes from %s' % (len(data), address))
     print (data)
@@ -73,6 +63,18 @@ while True:
             os.system("sudo rm -rf %s" %dir)
         os.makedirs(dir)
         clear()
+        
+        #Camera settings
+        camera = picamera.PiCamera()
+        camera.resolution = (2592, 1944)
+        camera.framerate = 25
+        camera.brightness = 50
+        camera.awb_mode = 'off'
+        camera.awb_gains = (1.5,1.5)
+        camera.iso = 50
+        camera.exposure_mode = 'off'
+        camera.shutter_speed = 500000
+        cameradelay = 0.55
 
         
         #Make photos
@@ -82,15 +84,19 @@ while True:
             print(millis)
             time.sleep(int(par2)-(cameradelay))
             sock.sendto("Photo: " + str(x+1), address)
+        
+        #Free-up the camera
+        camera.close()
             
     elif command == 'download':
         sock.sendto("Acknowledge " + command, address)
         #Send photos
         #for x in range(amount):
     
-    elif command == 'reboot':
+    elif command == 'reload':
         sock.sendto("Acknowledge " + command, address)
-        os.system('sudo shutdown -r now')
+        sock.close()
+        os.system("sudo python Reload.py")
         
     elif command == 'kill':
         sock.sendto("Acknowledge " + command, address)

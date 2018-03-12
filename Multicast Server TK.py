@@ -3,7 +3,7 @@
 #E99 : Parameters out of range
 #E2  : Function aborted (user)
 
-#tkmessagebox not working
+#Need to implement threading
 
 import socket
 import struct
@@ -16,6 +16,7 @@ from tkinter import messagebox as mb
 from tkinter import *
 
 client_path = r"C:\Users\Public\3dScannerCode\Client.py"
+reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
 
 multicast_group = ('224.0.0.10', 10000)
 
@@ -140,13 +141,15 @@ def sync():
     
         for x in range (0, connection_number+1):
             os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (client_path, connection_list[x]))
+            os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (reload_path, connection_list[x]))
         print("sync complete!")
+        reload()
         return (1)
     return (404)
     
-def reboot():
+def reload():
     if connection_check() == 1:
-        acknowledge("reboot")
+        acknowledge("reload")
         return (1)
     return (404)
         
@@ -179,7 +182,7 @@ tk.Entry(window, width=10, textvariable=folder).grid(column=1, row=4, sticky=W)
 tk.Button(width=8, text="Photos", command=photo).grid(column=0, row=0, sticky=W)
 tk.Button(width=8, text="Download", command=download).grid(column=0, row=3, sticky=W)
 tk.Button(width=8, text="Sync", command=sync).grid(column=0, row=5, sticky=W)
-tk.Button(width=8, text="Reboot", command=reboot).grid(column=0, row=6, sticky=W)
+tk.Button(width=8, text="Reload", command=reload).grid(column=0, row=6, sticky=W)
 tk.Button(width=8, text="Connect", command=connect).grid(column=0, row=7, sticky=W)
 tk.Button(width=8, text="Kill", command=kill).grid(column=0, row=8, sticky=W)
 
