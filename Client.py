@@ -73,7 +73,7 @@ while True:
         camera.awb_gains = (1.5,1.5)
         camera.iso = 50
         camera.exposure_mode = 'off'
-        camera.shutter_speed = 500000
+        camera.shutter_speed = 40000
         cameradelay = 0.55
 
         
