@@ -24,7 +24,7 @@ reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
 multicast_group = ('224.0.0.10', 10000)
 
 connection_number = -1
-threading_flag = 0
+current_thread = 0
 
 # Create the datagram socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -168,29 +168,22 @@ def kill():
         return (1)
     return (404)
 
-def c_button():
-    t = threading.Thread(target=connect)
-    t.start()
+commands = {0 : photo,
+            1 : download,
+            2 : sync,
+            3 : reload,
+            4 : connect,
+            5 : kill,
+}
 
-def p_button():
-    t = threading.Thread(target=photo)
-    t.start()
-
-def d_button():
-    t = threading.Thread(target=download)
-    t.start()
-
-def r_button():
-    t = threading.Thread(target=reload)
-    t.start()
-
-def s_button():
-    t = threading.Thread(target=sync)
-    t.start()
-
-def k_button():
-    t = threading.Thread(target=kill)
-    t.start()
+def button(command_number):
+    global current_thread
+    
+    if current_thread.isAlive():
+        print("Proces still running, please wait")
+    else:
+        current_thread = threading.Thread(target=commands[command_number])
+        current_thread.start()
 
 window = tk.Tk()
 window.title("3D Scanner")
@@ -212,13 +205,14 @@ tk.Label(window, text="Folder").grid(column=0, row=4)
 tk.Entry(window, width=10, textvariable=folder).grid(column=1, row=4, sticky=W)
 
 
-tk.Button(width=8, text="Photos", command= p_button).grid(column=0, row=0, sticky=W)
-tk.Button(width=8, text="Download", command=d_button).grid(column=0, row=3, sticky=W)
-tk.Button(width=8, text="Sync", command=s_button).grid(column=0, row=5, sticky=W)
-tk.Button(width=8, text="Reload", command=r_button).grid(column=0, row=6, sticky=W)
-tk.Button(width=8, text="Connect", command=c_button).grid(column=0, row=7, sticky=W)
-tk.Button(width=8, text="Kill", command=k_button).grid(column=0, row=8, sticky=W)
+tk.Button(width=8, text="Photos",   command= lambda: button(0)).grid(column=0, row=0, sticky=W)
+tk.Button(width=8, text="Download", command= lambda: button(1)).grid(column=0, row=3, sticky=W)
+tk.Button(width=8, text="Sync",     command= lambda: button(2)).grid(column=0, row=5, sticky=W)
+tk.Button(width=8, text="Reload",   command= lambda: button(3)).grid(column=0, row=6, sticky=W)
+tk.Button(width=8, text="Connect",  command= lambda: button(4)).grid(column=0, row=7, sticky=W)
+tk.Button(width=8, text="Kill",     command= lambda: button(5)).grid(column=0, row=8, sticky=W)
 
-c_button()
+current_thread = threading.Thread(target=commands[4])
+current_thread.start()
 
 window.mainloop()
