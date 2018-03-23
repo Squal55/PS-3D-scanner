@@ -23,8 +23,13 @@ reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
 
 multicast_group = ('224.0.0.10', 10000)
 
+download_flag = 1
 connection_number = -1
 current_thread = 0
+
+ts = time.time()
+st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
+
 
 # Create the datagram socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -39,6 +44,32 @@ connection_list = []
 # local network segment.
 ttl = struct.pack('b', 1)
 sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+
+def counter():
+    global download_flag
+    x = 5
+    
+    download_message = "Downloading photos"
+    
+    while not download_flag:
+
+        downloadpro_label.config(text = download_message)
+        x = x + 1
+        
+        if x >= 5:
+            download_message = download_message + '.'
+            if x == 10:
+                x = -5
+                
+        elif x <= 0:
+            download_message = download_message[:-1]
+            if x == 0:
+                x = 5
+            
+        time.sleep(.25)
+        
+    downloadpro_label.config(text = "Download complete!")  
+    return(1)
 
 def acknowledge(command):
     global connection_number
@@ -58,7 +89,7 @@ def acknowledge(command):
                 
                 if command[0:5] == "photo" and str(server)[2:16] == connection_list[0]:
                     x += 1
-                    tk.Label(window, text="{0} photo(s) done".format(x)).grid(column=1, row=0)
+                    tk.Label(window, text="{0} photo(s) done".format(x)).grid(column=1, row=0, sticky=W)
                 if command == "connect":
                     connection_number += 1
                     connection_list.append(connection_number)
@@ -92,6 +123,7 @@ def connect():
     global connection_number
     connection_number = -1
     acknowledge("connect")
+    tk.Label(window, text="{0} camera(s) connected".format(connection_number + 1)).grid(column=1, row=7, sticky=W)
     
     if connection_check() == 1:
         return (1)
@@ -119,14 +151,22 @@ def photo():
     return (404)
 
 def download():
-    ts = time.time()
-    st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
+    global ts
+    global st
     global connection_number
     global connection_list
+    global download_flag
+    
+    download_flag = 0
+    
+    counter_thread = threading.Thread(target=counter)
+    counter_thread.start()
     
     if connection_check() == 1:
-    
-        print("Downloading photos")
+        
+        download_message = "Downloading photos"
+        print(download_message)
+        
         na = folder.get()
         if not os.path.exists("c:\Temp\_pifotos\%s" %na):
             os.system ('mkdir c:\Temp\_pifotos\%s' %na)
@@ -134,15 +174,18 @@ def download():
             result = mb.askquestion("Folder already exists", "Are you sure you wish to overwrite an existing folder?", icon='warning')
             if result == "no":
                 print("Download aborted")
+                download_flag = 1
                 return(2)
         for x in range (0, connection_number+1):
             os.system('pscp.exe -pw protoscan1 pi@{0}:/home/pi/Desktop/photos/*.jpg c:\Temp\_pifotos\{1}\\'.format (connection_list[x], na))
         
         print("download complete!")
+        download_flag = 1
         return (1)
     return (404)
    
 def sync():
+    global st
     global connection_number
     global connection_list
     
@@ -153,6 +196,8 @@ def sync():
             os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (reload_path, connection_list[x]))
         print("sync complete!")
         reload()
+        tk.Label(window, text="Last synced : {0}".format(st)).grid(column=1, row=5)
+        
         return (1)
     return (404)
     
@@ -164,8 +209,13 @@ def reload():
         
 def kill():
     if connection_check() == 1:
-        acknowledge("kill")
-        return (1)
+        result = mb.askquestion("Kill program", "Are you sure you wish to kill the current script?", icon='warning')
+        if result == "no":
+            print("Kill aborted")
+            return(2)
+        else:
+            acknowledge("kill")
+            return (1)
     return (404)
 
 commands = {0 : photo,
@@ -180,7 +230,7 @@ def button(command_number):
     global current_thread
     
     if current_thread.isAlive():
-        print("Proces still running, please wait")
+        print("Process still running, please wait")
     else:
         current_thread = threading.Thread(target=commands[command_number])
         current_thread.start()
@@ -193,24 +243,26 @@ amount = tk.StringVar()
 delay  = tk.StringVar()
 folder = tk.StringVar()
 
-tk.Label(window, text="Amount").grid(column=0, row=1)
-tk.Entry(window, width=6, textvariable=amount).grid(column=1, row=1, sticky=W)
-tk.Label(window, text="max. 50").grid(column=2, row=1, sticky=W)
+photo_label     = tk.Label(window, text="Amount").grid(column=0, row=1)
+photo_entry     = tk.Entry(window, width=6, textvariable=amount).grid(column=1, row=1, sticky=W)
+max_photo_label = tk.Label(window, text="max. 50").place(x=120, y=25)
 
-tk.Label(window, text="Delay").grid(column=0, row=2)
-tk.Entry(window, width=6, textvariable=delay).grid(column=1, row=2, sticky=W)
-tk.Label(window, text="max. 3").grid(column=2, row=2, sticky=W)
+delay_label     = tk.Label(window, text="Delay").grid(column=0, row=2)
+delay_entry     = tk.Entry(window, width=6, textvariable=delay).grid(column=1, row=2, sticky=W)
+max_delay_label = tk.Label(window, text="max. 3").place(x=120, y=45)
 
-tk.Label(window, text="Folder").grid(column=0, row=4)
-tk.Entry(window, width=10, textvariable=folder).grid(column=1, row=4, sticky=W)
+download_label  = tk.Label(window, text="Folder").grid(column=0, row=4)
+download_entry  = tk.Entry(window, width=10, textvariable=folder).grid(column=1, row=4, sticky=W)
 
+photos_button   = tk.Button(width=8, text="Photos",   command= lambda: button(0)).grid(column=0, row=0, sticky=W)
+download_button = tk.Button(width=8, text="Download", command= lambda: button(1)).grid(column=0, row=3, sticky=W)
+sync_button     = tk.Button(width=8, text="Sync",     command= lambda: button(2)).grid(column=0, row=5, sticky=W)
+reload_button   = tk.Button(width=8, text="Reload",   command= lambda: button(3)).grid(column=0, row=6, sticky=W)
+connect_button  = tk.Button(width=8, text="Connect",  command= lambda: button(4)).grid(column=0, row=7, sticky=W)
+kill_button     = tk.Button(width=8, text="Kill",     command= lambda: button(5)).grid(column=0, row=8, sticky=W)
 
-tk.Button(width=8, text="Photos",   command= lambda: button(0)).grid(column=0, row=0, sticky=W)
-tk.Button(width=8, text="Download", command= lambda: button(1)).grid(column=0, row=3, sticky=W)
-tk.Button(width=8, text="Sync",     command= lambda: button(2)).grid(column=0, row=5, sticky=W)
-tk.Button(width=8, text="Reload",   command= lambda: button(3)).grid(column=0, row=6, sticky=W)
-tk.Button(width=8, text="Connect",  command= lambda: button(4)).grid(column=0, row=7, sticky=W)
-tk.Button(width=8, text="Kill",     command= lambda: button(5)).grid(column=0, row=8, sticky=W)
+downloadpro_label = tk.Label(window, text=" ")
+downloadpro_label.grid(column=1, row=3, sticky=W)
 
 current_thread = threading.Thread(target=commands[4])
 current_thread.start()
