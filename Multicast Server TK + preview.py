@@ -18,12 +18,15 @@ import datetime
 import time
 
 import PIL.Image
-from PIL import ImageTk
+import PIL.ImageTk
 from tkinter import messagebox as mb
 from tkinter import *
 
 import tkinter as tk
+import numpy as np
 import cv2
+import urllib
+import urllib.request
 
 client_path = r"C:\Users\Public\3dScannerCode\Client.py"
 reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
@@ -53,6 +56,14 @@ connection_list = []
 # local network segment.
 ttl = struct.pack('b', 1)
 sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+
+window = tk.Tk()
+window.title("3D Scanner")
+window.geometry("400x400")
+
+preview_image = tk.Label(window)
+preview_image.grid(column=5, row=11, sticky=W)
+preview_label = tk.Label(window, text="Camera preview").grid(column=5, row=10, sticky=S) 
 
 def counter():
     global download_flag
@@ -244,38 +255,23 @@ def kill():
     return (404)
 
 def preview():
-    sock.settimeout(6)
-    sock.sendto(str.encode('preview'), multicast_group)
-    fileFlag = True
+     #stream=open('C:/Users/Mr T/Downloads/curl-7.59.0-win32-mingw/curl-7.59.0-win32-mingw/bin/test.avi','rb')
+    stream=urllib.request.urlopen("http://192.168.178.20:8000/stream.mjpg")
+    streamBytes= bytes()
     while True:
-        try:
-            os.system('@echo off')
-            data, server = sock.recvfrom(32)
-            if data.decode() == 'dr':
-                img = None
-                print('test')
-                preview_file = Path('//192.168.178.20/share/preview2.jpg')
-                #os.system('pscp.exe -pw protoscan1 pi@192.168.178.20:/home/pi/Desktop/preview/preview.jpg c:\Temp\_pifotos\preview\\')
-                if fileFlag == True:
-                    preview_file = Path('//192.168.178.20/share/preview.jpg')
-                    
-                if preview_file.exists():
-                    statinfo = os.stat(preview_file)
-                    print("stat %s: created: %d, modified: %d" % (preview_file, statinfo.st_ctime, statinfo.st_mtime))
-                    os.system('echo .>> \\192.168.178.20\share\test.txt')
-                    #with preview_file.open():
-                        #pass
-                    img = ImageTk.PhotoImage(PIL.Image.open(preview_file))
-                
-                fileFlag = not fileFlag
-                panel = tk.Label(window, image = img)
-                panel.grid(column=0, row=10, sticky=W)
-                sock.sendto(str.encode('dd'), multicast_group)
-        except socket.timeout:
-            break
-            #img = ImageTk.PhotoImage(PIL.Image.open('c:\Temp\_pifotos\Preview\preview.jpg'))
-            #panel = tk.Label(root, image = img)
-            #panel.pack(side = "bottom", fill = "both", expand = "yes")
+        streamBytes+=stream.read(1024)
+        a = streamBytes.find(b'\xff\xd8')
+        b = streamBytes.find(b'\xff\xd9')
+        if a!=-1 and b!=-1:
+            jpg = streamBytes[a:b+2]
+            streamBytes= streamBytes[b+2:]
+            i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.IMREAD_COLOR)            
+            tki = PIL.ImageTk.PhotoImage(PIL.Image.fromarray(cv2.cvtColor(i, cv2.COLOR_BGR2RGB)))
+            preview_image.configure(image=tki)                
+            preview_image._backbuffer_ = tki  #avoid flicker caused by premature gc
+            #cv2.imshow('i',i)
+        if cv2.waitKey(1) ==27:
+            exit(0)  
         
 
 commands = {0 : photo,
@@ -295,10 +291,6 @@ def button(command_number):
     else:
         current_thread = threading.Thread(target=commands[command_number])
         current_thread.start()
-
-window = tk.Tk()
-window.title("3D Scanner")
-window.geometry("400x400")
 
 amount = tk.StringVar()
 delay  = tk.StringVar()
