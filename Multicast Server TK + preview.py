@@ -34,6 +34,7 @@ reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
 multicast_group = ('224.0.0.10', 10000)
 
 download_flag = 1
+preview_flag = 0
 connection_number = -1
 current_thread = 0
 
@@ -61,9 +62,12 @@ window = tk.Tk()
 window.title("3D Scanner")
 window.geometry("575x300")
 
-preview_image = tk.Label(window)
+
+#preview_border = tk.Label(window)
+#preview_border.place(x=225, y=25)
+preview_label  = tk.LabelFrame(window, text="Camera preview", width=335, height=265, labelanchor=N).place(x=220, y=10)
+preview_image  = tk.Label(window)
 preview_image.place(x=225, y=25)
-preview_label = tk.Label(window, text="Camera preview").place(x=350, y=5) 
 
 def counter():
     global download_flag
@@ -255,7 +259,9 @@ def kill():
     return (404)
 
 def preview():
+    global preview_flag
      #stream=open('C:/Users/Mr T/Downloads/curl-7.59.0-win32-mingw/curl-7.59.0-win32-mingw/bin/test.avi','rb')
+    preview_button.config(text="Stop", bg="red", command = lambda: button(7))
     stream=urllib.request.urlopen("http://192.168.178.20:8000/stream.mjpg")
     streamBytes= bytes()
     while True:
@@ -271,9 +277,13 @@ def preview():
             preview_image._backbuffer_ = tki  #avoid flicker caused by premature gc
             #cv2.imshow('i',i)
         if cv2.waitKey(1) ==27:
-            exit(0)  
+            exit(0)
+        if preview_flag == 1:
+            preview_flag = 0
+            preview_image.configure(image='')
+            preview_button.config(text="Preview", bg="white", command = lambda: button(6))
+            return
         
-
 commands = {0 : photo,
             1 : download,
             2 : sync,
@@ -283,18 +293,29 @@ commands = {0 : photo,
             6 : preview,
 }
 
+preview_select = {0 : 'no cam',
+                  1 : 'cam 1',
+                  2 : 'cam 2',
+                  3 : 'cam 3',
+                  4 : 'cam 4',
+}
+
 def button(command_number):
     global current_thread
+    global preview_flag
     
-    if current_thread.isAlive():
+    if command_number == 7:
+        preview_flag = 1
+    elif current_thread.isAlive():
         print("Process still running, please wait")
     else:
         current_thread = threading.Thread(target=commands[command_number])
         current_thread.start()
 
-amount = tk.StringVar()
-delay  = tk.StringVar()
-folder = tk.StringVar()
+amount   = tk.StringVar()
+delay    = tk.StringVar()
+folder   = tk.StringVar()
+p_button = tk.StringVar()
 
 photo_label     = tk.Label(window, text="Amount").grid(column=0, row=1)
 photo_entry     = tk.Entry(window, width=6, textvariable=amount).grid(column=1, row=1, sticky=W)
@@ -307,13 +328,26 @@ max_delay_label = tk.Label(window, text="max. 5s").place(x=120, y=45)
 download_label  = tk.Label(window, text="Folder").grid(column=0, row=4)
 download_entry  = tk.Entry(window, width=10, textvariable=folder).grid(column=1, row=4, sticky=W)
 
-photos_button   = tk.Button(width=8, text="Photos",   command= lambda: button(0)).grid(column=0, row=0, sticky=W)
-download_button = tk.Button(width=8, text="Download", command= lambda: button(1)).grid(column=0, row=3, sticky=W)
-sync_button     = tk.Button(width=8, text="Sync",     command= lambda: button(2)).grid(column=0, row=5, sticky=W)
-reload_button   = tk.Button(width=8, text="Reload",   command= lambda: button(3)).grid(column=0, row=6, sticky=W)
-connect_button  = tk.Button(width=8, text="Connect",  command= lambda: button(4)).grid(column=0, row=7, sticky=W)
-kill_button     = tk.Button(width=8, text="Kill",     command= lambda: button(5)).grid(column=0, row=8, sticky=W)
-preview_button  = tk.Button(width=8, text="Preview",  command= lambda: button(6)).grid(column=0, row=9, sticky=W)
+photos_button   = tk.Button(width=8, text="Photos",   command= lambda: button(0), bg = "white")
+photos_button.grid(column=0, row=0, sticky=W)
+
+download_button = tk.Button(width=8, text="Download", command= lambda: button(1), bg = "white")
+download_button.grid(column=0, row=3, sticky=W)
+
+sync_button     = tk.Button(width=8, text="Sync",     command= lambda: button(2), bg = "white")
+sync_button.grid(column=0, row=5, sticky=W)
+
+reload_button   = tk.Button(width=8, text="Reload",   command= lambda: button(3), bg = "white")
+reload_button.grid(column=0, row=6, sticky=W)
+
+connect_button  = tk.Button(width=8, text="Connect",  command= lambda: button(4), bg = "white")
+connect_button.grid(column=0, row=7, sticky=W)
+
+kill_button     = tk.Button(width=8, text="Kill",     command= lambda: button(5), bg = "white")
+kill_button.grid(column=0, row=8, sticky=W)
+
+preview_button  = tk.Button(width=8, text="Preview",  command= lambda: button(6), bg = "white")
+preview_button.grid(column=0, row=9, sticky=W)
 
 downloadpro_label = tk.Label(window, text=" ")
 downloadpro_label.grid(column=1, row=3, sticky=W)
