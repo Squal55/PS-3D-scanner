@@ -59,11 +59,11 @@ sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
 
 window = tk.Tk()
 window.title("3D Scanner")
-window.geometry("400x400")
+window.geometry("575x300")
 
 preview_image = tk.Label(window)
-preview_image.grid(column=5, row=11, sticky=W)
-preview_label = tk.Label(window, text="Camera preview").grid(column=5, row=10, sticky=S) 
+preview_image.place(x=225, y=25)
+preview_label = tk.Label(window, text="Camera preview").place(x=350, y=5) 
 
 def counter():
     global download_flag
