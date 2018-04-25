@@ -260,11 +260,14 @@ def kill():
 
 def preview():
     global preview_flag
-    
+    if not connection_check():
+        return 0
     if p_menu.get() == preview_select[0]:
-        return
+        print("No camera selected, please select a camera")
+        return 404
     
     preview_button.config(text="Stop", bg="red", command = lambda: button(7))
+    print("{0} preview, press stop to cancel".format (p_menu.get()))
     stream=urllib.request.urlopen("http://{0}:8000/stream.mjpg".format (p_menu.get()))
     streamBytes= bytes()
     while True:
