@@ -1,6 +1,7 @@
 #Error list:
 #E404: Connection not established
 #E99 : Parameters out of range
+#E50 : No data available
 #E2  : Function aborted (user)
 
 #Need to implement threading
@@ -21,6 +22,7 @@ reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
 multicast_group = ('224.0.0.10', 10000)
 
 connection_number = -1
+threading_flag = 0
 
 # Create the datagram socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,11 +46,13 @@ def acknowledge(command):
     try:
         # Send data to the multicast group
         sent = sock.sendto(str.encode(command), multicast_group)
+        f = 0
         
         # Look for responses from all recipients
         while True:
             try:
                 data, server = sock.recvfrom(32)
+                f = 1
                 
                 if command[0:5] == "photo" and str(server)[2:16] == connection_list[0]:
                     x += 1
@@ -63,8 +67,11 @@ def acknowledge(command):
 
             except socket.timeout:
                 if not connection_list and command == "connect":
-                   print("Connection failed, please repeat connect function")
-                   return(1)
+                    print("Connection failed, please repeat connect function")
+                    return(404)
+                if f == 0:
+                    print("No data retrieved, please repeat connect function")
+                    return(50)
                 print ('%s finished succesfully!' %command)
                 break
             else:

@@ -65,22 +65,15 @@ while True:
 # Check Message Data
 
 
-    if command == 'photo' or command == 'preview':
-        
-        if command == 'photo':
-            print ('received photo')
-            photo_flag = 0
-            photo_number = 0
-            photo_string = "0"
-            if os.path.exists(dir):
-                os.system("sudo rm -rf %s" %dir)
-            os.makedirs(dir)
-            clear()
-            
-        if command == 'preview':
-            if os.path.exists('Desktop/preview'):
-                os.system("sudo rm -rf Desktop/preview")
-            os.makedirs('Desktop/preview')
+    if command == 'photo':
+        print ('received photo')
+        photo_flag = 0
+        photo_number = 0
+        photo_string = "0"
+        if os.path.exists(dir):
+            os.system("sudo rm -rf %s" %dir)
+        os.makedirs(dir)
+        clear()
         
         #Turn on lighting
         GPIO.output(ledpin, False)
@@ -98,22 +91,17 @@ while True:
         cameradelay = 0.55
 
         
-        if command == 'photo':
         #Make photos
-            for x in range(int(par1)):
+        for x in range(int(par1)):
             
-                while(photo_number > photo_flag):
-                    photo_string, address = sock.recvfrom(1024)
-                    photo_flag = int(photo_string)
+            while(photo_number > photo_flag):
+                photo_string, address = sock.recvfrom(1024)
+                photo_flag = int(photo_string)
                 
-                camera.capture('/home/pi/%s/%s_%d.jpg' % (dir, get_ip_address('eth0'), x+1))
-                sock.sendto("Photo: " + str(x+1), address)
-                photo_number += 1
-                time.sleep(float(par2)-(cameradelay))
-        
-        if command == 'preview':
-            while True:
-                camera.capture('/home/pi/Desktop/preview/preview.jpg')
+            camera.capture('/home/pi/%s/%s_%d.jpg' % (dir, get_ip_address('eth0'), x+1))
+            sock.sendto("Photo: " + str(x+1), address)
+            photo_number += 1
+            time.sleep(float(par2)-(cameradelay))
         
         #Free-up the camera
         camera.close()
@@ -139,21 +127,6 @@ while True:
     elif command == 'connect':
         print("Connect")
         sock.sendto("Acknowledge " + command, address)
-
-#Preview test
-    elif command == 'preview':
-        
-        camera = picamera.PiCamera()
-        print("test")
-        camera.resolution = (320, 640)
-        camera.framerate = 30
-        camera.brightness = 50
-        camera.awb_mode = 'off'
-        camera.awb_gains = (1.5,1.5)
-        camera.iso = 200
-        camera.exposure_mode = 'off'
-        camera.shutter_speed = 9000
-        cameradelay = 0.55
     
     else:
         if not command.isdigit():

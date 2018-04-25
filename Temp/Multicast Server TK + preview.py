@@ -4,20 +4,25 @@
 #E50 : No data available
 #E2  : Function aborted (user)
 
-#Need to implement threading
-
 import threading
 import logging
 import socket
 import struct
+
 import sys
 import os
 import re
+
 import datetime
 import time
-import tkinter as tk
+
+import PIL.Image
+from PIL import ImageTk
 from tkinter import messagebox as mb
 from tkinter import *
+
+import tkinter as tk
+import cv2
 
 client_path = r"C:\Users\Public\3dScannerCode\Client.py"
 reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
@@ -237,12 +242,22 @@ def kill():
             return (1)
     return (404)
 
+def preview():
+    sock.sendto(str.encode('preview'), multicast_group)
+    while True:
+        os.system('pscp.exe -pw protoscan1 pi@192.168.178.20:/home/pi/Desktop/preview/preview.jpg c:\Temp\_pifotos\Preview\\')
+        img = ImageTk.PhotoImage(PIL.Image.open('c:\Temp\_pifotos\Preview\preview.jpg'))
+        panel = tk.Label(root, image = img)
+        panel.pack(side = "bottom", fill = "both", expand = "yes")
+        
+
 commands = {0 : photo,
             1 : download,
             2 : sync,
             3 : reload,
             4 : connect,
             5 : kill,
+            6 : preview,
 }
 
 def button(command_number):
@@ -279,6 +294,7 @@ sync_button     = tk.Button(width=8, text="Sync",     command= lambda: button(2)
 reload_button   = tk.Button(width=8, text="Reload",   command= lambda: button(3)).grid(column=0, row=6, sticky=W)
 connect_button  = tk.Button(width=8, text="Connect",  command= lambda: button(4)).grid(column=0, row=7, sticky=W)
 kill_button     = tk.Button(width=8, text="Kill",     command= lambda: button(5)).grid(column=0, row=8, sticky=W)
+preview_button  = tk.Button(width=8, text="Preview",  command= lambda: button(6)).grid(column=0, row=9, sticky=W)
 
 downloadpro_label = tk.Label(window, text=" ")
 downloadpro_label.grid(column=1, row=3, sticky=W)

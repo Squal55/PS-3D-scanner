@@ -4,20 +4,26 @@
 #E50 : No data available
 #E2  : Function aborted (user)
 
-#Need to implement threading
-
 import threading
 import logging
 import socket
 import struct
+
 import sys
 import os
 import re
+from pathlib import Path
+
 import datetime
 import time
-import tkinter as tk
+
+import PIL.Image
+from PIL import ImageTk
 from tkinter import messagebox as mb
 from tkinter import *
+
+import tkinter as tk
+import cv2
 
 client_path = r"C:\Users\Public\3dScannerCode\Client.py"
 reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
@@ -237,12 +243,48 @@ def kill():
             return (1)
     return (404)
 
+def preview():
+    sock.settimeout(6)
+    sock.sendto(str.encode('preview'), multicast_group)
+    fileFlag = True
+    while True:
+        try:
+            os.system('@echo off')
+            data, server = sock.recvfrom(32)
+            if data.decode() == 'dr':
+                img = None
+                print('test')
+                preview_file = Path('//192.168.178.20/share/preview2.jpg')
+                #os.system('pscp.exe -pw protoscan1 pi@192.168.178.20:/home/pi/Desktop/preview/preview.jpg c:\Temp\_pifotos\preview\\')
+                if fileFlag == True:
+                    preview_file = Path('//192.168.178.20/share/preview.jpg')
+                    
+                if preview_file.exists():
+                    statinfo = os.stat(preview_file)
+                    print("stat %s: created: %d, modified: %d" % (preview_file, statinfo.st_ctime, statinfo.st_mtime))
+                    os.system('echo .>> \\192.168.178.20\share\test.txt')
+                    #with preview_file.open():
+                        #pass
+                    img = ImageTk.PhotoImage(PIL.Image.open(preview_file))
+                
+                fileFlag = not fileFlag
+                panel = tk.Label(window, image = img)
+                panel.grid(column=0, row=10, sticky=W)
+                sock.sendto(str.encode('dd'), multicast_group)
+        except socket.timeout:
+            break
+            #img = ImageTk.PhotoImage(PIL.Image.open('c:\Temp\_pifotos\Preview\preview.jpg'))
+            #panel = tk.Label(root, image = img)
+            #panel.pack(side = "bottom", fill = "both", expand = "yes")
+        
+
 commands = {0 : photo,
             1 : download,
             2 : sync,
             3 : reload,
             4 : connect,
             5 : kill,
+            6 : preview,
 }
 
 def button(command_number):
@@ -279,6 +321,7 @@ sync_button     = tk.Button(width=8, text="Sync",     command= lambda: button(2)
 reload_button   = tk.Button(width=8, text="Reload",   command= lambda: button(3)).grid(column=0, row=6, sticky=W)
 connect_button  = tk.Button(width=8, text="Connect",  command= lambda: button(4)).grid(column=0, row=7, sticky=W)
 kill_button     = tk.Button(width=8, text="Kill",     command= lambda: button(5)).grid(column=0, row=8, sticky=W)
+preview_button  = tk.Button(width=8, text="Preview",  command= lambda: button(6)).grid(column=0, row=9, sticky=W)
 
 downloadpro_label = tk.Label(window, text=" ")
 downloadpro_label.grid(column=1, row=3, sticky=W)
