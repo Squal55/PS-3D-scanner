@@ -260,9 +260,12 @@ def kill():
 
 def preview():
     global preview_flag
-     #stream=open('C:/Users/Mr T/Downloads/curl-7.59.0-win32-mingw/curl-7.59.0-win32-mingw/bin/test.avi','rb')
+    
+    if p_menu.get() == preview_select[0]:
+        return
+    
     preview_button.config(text="Stop", bg="red", command = lambda: button(7))
-    stream=urllib.request.urlopen("http://192.168.178.20:8000/stream.mjpg")
+    stream=urllib.request.urlopen("http://{0}:8000/stream.mjpg".format (p_menu.get()))
     streamBytes= bytes()
     while True:
         streamBytes+=stream.read(1024)
@@ -293,12 +296,12 @@ commands = {0 : photo,
             6 : preview,
 }
 
-preview_select = {0 : 'no cam',
-                  1 : 'cam 1',
-                  2 : 'cam 2',
-                  3 : 'cam 3',
-                  4 : 'cam 4',
-}
+preview_select = ["no camera",
+                  "192.168.178.20",
+                  "192.168.178.21",
+                  "192.168.178.22",
+                  "192.168.178.27",
+]
 
 def button(command_number):
     global current_thread
@@ -312,10 +315,11 @@ def button(command_number):
         current_thread = threading.Thread(target=commands[command_number])
         current_thread.start()
 
-amount   = tk.StringVar()
-delay    = tk.StringVar()
-folder   = tk.StringVar()
-p_button = tk.StringVar()
+amount  = tk.StringVar()
+delay   = tk.StringVar()
+folder  = tk.StringVar()
+p_menu  = tk.StringVar()
+p_menu.set(preview_select[0])
 
 photo_label     = tk.Label(window, text="Amount").grid(column=0, row=1)
 photo_entry     = tk.Entry(window, width=6, textvariable=amount).grid(column=1, row=1, sticky=W)
@@ -348,6 +352,9 @@ kill_button.grid(column=0, row=8, sticky=W)
 
 preview_button  = tk.Button(width=8, text="Preview",  command= lambda: button(6), bg = "white")
 preview_button.grid(column=0, row=9, sticky=W)
+
+preview_dropdwn = tk.OptionMenu(window, p_menu, *preview_select)
+preview_dropdwn.place(x=67, y=216)
 
 downloadpro_label = tk.Label(window, text=" ")
 downloadpro_label.grid(column=1, row=3, sticky=W)
