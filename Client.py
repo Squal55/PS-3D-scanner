@@ -10,9 +10,13 @@ import RPi.GPIO as GPIO
 
 import io
 import logging
-import socketserver
+import SocketServer
+import threading
 from threading import Condition
-from http import server
+import BaseHTTPServer
+
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE, SIG_DFL)
   
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -63,7 +67,14 @@ PAGE="""\
 </body>
 </html>
 """
-
+def preview_end():
+    data, address = sock.recvfrom(1024)
+    while data.decode() != "stop_preview":
+        print("test")
+        data, address = sock.recvfrom(1024)
+    print("test2")
+    server.shutdown()
+    
 class StreamingOutput(object):
     def __init__(self):
         self.frame = None
@@ -81,7 +92,7 @@ class StreamingOutput(object):
             self.buffer.seek(0)
         return self.buffer.write(buf)
 
-class StreamingHandler(server.BaseHTTPRequestHandler):
+class StreamingHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
@@ -120,10 +131,14 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_error(404)
             self.end_headers()
 
-class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
+class StreamingServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
-    
+
+output = StreamingOutput()
+address = ('', 8000)
+server = StreamingServer(address, StreamingHandler)
+
 while True:
     print ('\nwaiting to receive message')   
     data, address = sock.recvfrom(1024)
@@ -207,24 +222,17 @@ while True:
         
     elif command == 'preview':
         with picamera.PiCamera(resolution='320x240', framerate=24) as camera:
-            output = StreamingOutput()
             camera.start_recording(output, format='mjpeg')
-            while True
-                address = ('', 8000)
-                server = StreamingServer(address, StreamingHandler)
-                server.serve_forever()
-                command = data.decode()
-                if command == "stop_preview":
+            threading.Thread(target=server.serve_forever).start()
+            while True:
+                data, address = sock.recvfrom(1024)
+                if data.decode() == "stop_preview":
+                    threading.Thread(target=server.shutdown).start()
+                    camera.stop_recording()
                     camera.close()
                     break
-    
-    elif command == 'stop_preview':
-        os.system("pkill -9 -f Streaming.py")
-        camera.close()
-    
+                
     else:
         if not command.isdigit():
             sock.sendto("Received wrong command", address)
             print ('Received wrong command')
-
-

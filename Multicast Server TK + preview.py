@@ -317,6 +317,7 @@ def button(command_number):
     
     if command_number == 7:
         preview_flag = 1
+        time.sleep(0.1)
         threading.Thread(target=acknowledge("stop_preview"))
     elif current_thread.isAlive():
         print("Process still running, please wait")
