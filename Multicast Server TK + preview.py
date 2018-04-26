@@ -3,7 +3,6 @@
 #E99 : Parameters out of range
 #E50 : No data available
 #E2  : Function aborted (user)
-
 import threading
 import logging
 import socket
@@ -27,9 +26,12 @@ import numpy as np
 import cv2
 import urllib
 import urllib.request
+from http import server
+import socketserver
 
-client_path = r"C:\Users\Public\3dScannerCode\Client.py"
-reload_path = r"C:\Users\Public\3dScannerCode\Reload.py"
+client_path = r"C:\Users\Public\PS-3D-scanner\Client.py"
+reload_path = r"C:\Users\Public\PS-3D-scanner\Reload.py"
+streaming_path = r"C:\Users\Public\PS-3D-scanner\Streaming.py"
 
 multicast_group = ('224.0.0.10', 10000)
 
@@ -137,8 +139,9 @@ def acknowledge(command):
                     print("Connection failed, please repeat connect function")
                     return(404)
                 if data_flag == 0:
-                    print("No data retrieved, please repeat connect function")
-                    return(50)
+                    if command != "preview" and command != "stop_preview":
+                        print("No data retrieved, please repeat connect function")
+                        return(50)
                 print ('%s finished succesfully!' %command)
                 if command[0:5] == "photo":
                     sent = sock.sendto(str.encode("light"), multicast_group)
@@ -232,6 +235,7 @@ def sync():
         for x in range (0, connection_number+1):
             os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (client_path, connection_list[x]))
             os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (reload_path, connection_list[x]))
+            os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (streaming_path, connection_list[x]))
         print("sync complete!")
         reload()
         tk.Label(window, text="Last synced : {0}".format(st)).grid(column=1, row=5)
@@ -266,6 +270,7 @@ def preview():
         print("No camera selected, please select a camera")
         return 404
     
+    acknowledge("preview")
     preview_button.config(text="Stop", bg="red", command = lambda: button(7))
     print("{0} preview, press stop to cancel".format (p_menu.get()))
     stream=urllib.request.urlopen("http://{0}:8000/stream.mjpg".format (p_menu.get()))
@@ -312,6 +317,7 @@ def button(command_number):
     
     if command_number == 7:
         preview_flag = 1
+        threading.Thread(target=acknowledge("stop_preview"))
     elif current_thread.isAlive():
         print("Process still running, please wait")
     else:
