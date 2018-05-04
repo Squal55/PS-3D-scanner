@@ -360,7 +360,7 @@ preview_button  = createButton("Preview",  9, "white", 6)
 
 createLabel("max. 50", 110, 25)
 createLabel("max. 5s", 110, 45)
-downloadpro_label = createLabel("test", 67, 70)
+downloadpro_label = createLabel("", 67, 70)
 
 preview_dropdwn = tk.OptionMenu(window, p_menu, *preview_select)
 preview_dropdwn.place(x=67, y=216)

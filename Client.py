@@ -146,14 +146,10 @@ output = StreamingOutput()
 global stream_flag
 
 def streaming_start():
-    global stream_flag
-    while stream_flag == 1:
-        try:
-            server.handle_request()
-        except Exception as e:
-            print("caught: %s" % str(e))
-    stream_flag = 1
-
+    try:
+        server.handle_request()
+    except Exception as e:
+        print("caught: %s" % str(e))
 
 while True:
     global stream_flag
@@ -245,9 +241,6 @@ while True:
             threading.Thread(target=streaming_start()).start()
             while data.decode() != "stop_preview":
                 data, address = sock.recvfrom(1024)
-            stream_flag = 0
-            while streamflag != 1:
-                pass
             camera.stop_recording()
             camera.close()
                 
