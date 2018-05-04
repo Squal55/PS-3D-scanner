@@ -300,15 +300,13 @@ commands = {0 : photo,
             3 : reload,
             4 : connect,
             5 : kill,
-            6 : preview,
-}
+            6 : preview,}
 
 preview_select = ["no camera",
                   "192.168.178.20",
                   "192.168.178.21",
                   "192.168.178.22",
-                  "192.168.178.27",
-]
+                  "192.168.178.27",]
 
 def button(command_number):
     global current_thread
@@ -323,50 +321,49 @@ def button(command_number):
     else:
         current_thread = threading.Thread(target=commands[command_number])
         current_thread.start()
+        
+def createEntry(name, position, size, variable):
+    new_label = tk.Label(window, text=name)
+    new_label.grid(column=0, row=position)
+    new_entry = tk.Entry(window, width=size, text=variable)
+    new_entry.grid(column=1, row=position, sticky=W)
+    return new_entry
+
+def createButton(button_text, position, colour, function_number):
+    vars()[str(function_number)] = tk.Button(width=8, text=button_text, command = lambda: button(function_number), bg = colour)
+    vars()[str(function_number)].grid(column=0, row=position, sticky=W)
+    return vars()[str(function_number)]
+    
+def createLabel(name, coordx, coordy):
+    new_label = tk.Label(window, text=name)
+    new_label.place(x=coordx, y=coordy)
+    return new_label
 
 amount  = tk.StringVar()
 delay   = tk.StringVar()
 folder  = tk.StringVar()
+
 p_menu  = tk.StringVar()
 p_menu.set(preview_select[0])
 
-photo_label     = tk.Label(window, text="Amount").grid(column=0, row=1)
-photo_entry     = tk.Entry(window, width=6, textvariable=amount).grid(column=1, row=1, sticky=W)
-max_photo_label = tk.Label(window, text="max. 50").place(x=120, y=25)
+createEntry("Amount", 1, 6,  amount)
+createEntry("Delay",  2, 6,  delay )
+createEntry("Folder", 4, 10, folder)
 
-delay_label     = tk.Label(window, text="Delay").grid(column=0, row=2)
-delay_entry     = tk.Entry(window, width=6, textvariable=delay).grid(column=1, row=2, sticky=W)
-max_delay_label = tk.Label(window, text="max. 5s").place(x=120, y=45)
+createButton("Photos",   0, "white", 0)
+createButton("Download", 3, "white", 1)
+createButton("Sync",     5, "white", 2)
+createButton("Reload",   6, "white", 3)
+createButton("Connect",  7, "white", 4)
+createButton("Kill",     8, "white", 5)
+preview_button  = createButton("Preview",  9, "white", 6)
 
-download_label  = tk.Label(window, text="Folder").grid(column=0, row=4)
-download_entry  = tk.Entry(window, width=10, textvariable=folder).grid(column=1, row=4, sticky=W)
-
-photos_button   = tk.Button(width=8, text="Photos",   command= lambda: button(0), bg = "white")
-photos_button.grid(column=0, row=0, sticky=W)
-
-download_button = tk.Button(width=8, text="Download", command= lambda: button(1), bg = "white")
-download_button.grid(column=0, row=3, sticky=W)
-
-sync_button     = tk.Button(width=8, text="Sync",     command= lambda: button(2), bg = "white")
-sync_button.grid(column=0, row=5, sticky=W)
-
-reload_button   = tk.Button(width=8, text="Reload",   command= lambda: button(3), bg = "white")
-reload_button.grid(column=0, row=6, sticky=W)
-
-connect_button  = tk.Button(width=8, text="Connect",  command= lambda: button(4), bg = "white")
-connect_button.grid(column=0, row=7, sticky=W)
-
-kill_button     = tk.Button(width=8, text="Kill",     command= lambda: button(5), bg = "white")
-kill_button.grid(column=0, row=8, sticky=W)
-
-preview_button  = tk.Button(width=8, text="Preview",  command= lambda: button(6), bg = "white")
-preview_button.grid(column=0, row=9, sticky=W)
+createLabel("max. 50", 110, 25)
+createLabel("max. 5s", 110, 45)
+downloadpro_label = createLabel("test", 67, 70)
 
 preview_dropdwn = tk.OptionMenu(window, p_menu, *preview_select)
 preview_dropdwn.place(x=67, y=216)
-
-downloadpro_label = tk.Label(window, text=" ")
-downloadpro_label.grid(column=1, row=3, sticky=W)
 
 current_thread = threading.Thread(target=commands[4])
 current_thread.start()
