@@ -31,7 +31,6 @@ import socketserver
 
 client_path = r"C:\Users\Public\PS-3D-scanner\Client.py"
 reload_path = r"C:\Users\Public\PS-3D-scanner\Reload.py"
-streaming_path = r"C:\Users\Public\PS-3D-scanner\Streaming.py"
 
 multicast_group = ('224.0.0.10', 10000)
 
@@ -235,7 +234,6 @@ def sync():
         for x in range (0, connection_number+1):
             os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (client_path, connection_list[x]))
             os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (reload_path, connection_list[x]))
-            os.system(r'pscp.exe -pw protoscan1 {0} pi@{1}:/home/pi'.format (streaming_path, connection_list[x]))
         print("sync complete!")
         reload()
         tk.Label(window, text="Last synced : {0}".format(st)).grid(column=1, row=5)
@@ -273,6 +271,7 @@ def preview():
     acknowledge("preview")
     preview_button.config(text="Stop", bg="red", command = lambda: button(7))
     print("{0} preview, press stop to cancel".format (p_menu.get()))
+    urllib.request.urlcleanup()
     stream=urllib.request.urlopen("http://{0}:8000/stream.mjpg".format (p_menu.get()))
     streamBytes= bytes()
     while True:

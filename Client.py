@@ -15,9 +15,6 @@ import threading
 from threading import Condition
 import BaseHTTPServer
 
-from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE, SIG_DFL)
-  
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return socket.inet_ntoa(fcntl.ioctl(
@@ -67,13 +64,6 @@ PAGE="""\
 </body>
 </html>
 """
-def preview_end():
-    data, address = sock.recvfrom(1024)
-    while data.decode() != "stop_preview":
-        print("test")
-        data, address = sock.recvfrom(1024)
-    print("test2")
-    server.shutdown()
     
 class StreamingOutput(object):
     def __init__(self):
@@ -93,6 +83,21 @@ class StreamingOutput(object):
         return self.buffer.write(buf)
 
 class StreamingHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    def finish(self, *args, **kw):
+        try:
+            if not self.wfile.close:
+                self.wfile.flush()
+                self.wfile.close()
+        except socket.error:
+            pass
+        self.rfile.close()
+        
+    def handle(self):
+        try:
+            BaseHTTPServer.BaseHTTPRequestHandler.handle(self)
+        except socket.error:
+            pass
+        
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
@@ -135,11 +140,24 @@ class StreamingServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
-output = StreamingOutput()
 address = ('', 8000)
 server = StreamingServer(address, StreamingHandler)
+output = StreamingOutput()
+global stream_flag
+
+def streaming_start():
+    global stream_flag
+    while stream_flag == 1:
+        try:
+            server.handle_request()
+        except Exception as e:
+            print("caught: %s" % str(e))
+    stream_flag = 1
+
 
 while True:
+    global stream_flag
+    
     print ('\nwaiting to receive message')   
     data, address = sock.recvfrom(1024)
 
@@ -222,15 +240,16 @@ while True:
         
     elif command == 'preview':
         with picamera.PiCamera(resolution='320x240', framerate=24) as camera:
+            stream_flag = 1
             camera.start_recording(output, format='mjpeg')
-            threading.Thread(target=server.serve_forever).start()
-            while True:
+            threading.Thread(target=streaming_start()).start()
+            while data.decode() != "stop_preview":
                 data, address = sock.recvfrom(1024)
-                if data.decode() == "stop_preview":
-                    threading.Thread(target=server.shutdown).start()
-                    camera.stop_recording()
-                    camera.close()
-                    break
+            stream_flag = 0
+            while streamflag != 1:
+                pass
+            camera.stop_recording()
+            camera.close()
                 
     else:
         if not command.isdigit():
