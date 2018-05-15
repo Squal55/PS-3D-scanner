@@ -96,42 +96,36 @@ def counter():
     downloadpro_label.config(text = "Download complete!")  
     return(1)
 
-def acknowledge(command):
+def process_data(command):
     global connection_number
     global connection_list
     photo_number = -1
     current_photo = 0
-    x = 0
+    data_flag = 0
     
     try:
-        # Send data to the multicast group
-        sock.sendto(str.encode(command), multicast_group)
-        data_flag = 0
+        if command == "preview" or command == "stop_preview":
+            preview_ip = (p_menu.get(), 10000)
+            sock.sendto(str.encode(command), preview_ip) 
+        else:
+            sock.sendto(str.encode(command), multicast_group)
         
-        # Look for responses from all recipients
         while True:
             try:
                 data, server = sock.recvfrom(32)
+                data_flag = 1
                 photo_number += 1
                 
-                if photo_number == connection_number:
+                if command[0:5] == "photo" and photo_number == connection_number:
                     current_photo += 1
                     photo_number = -1
                     sock.sendto(str.encode(str(current_photo)), multicast_group)
+                    tk.Label(window, text="{0} photo(s) done".format(current_photo)).grid(column=1, row=0, sticky=W)     
                     
-                data_flag = 1
-                
-                
-                if command[0:5] == "photo" and str(server)[2:16] == connection_list[0]:
-                    x += 1
-                    tk.Label(window, text="{0} photo(s) done".format(x)).grid(column=1, row=0, sticky=W)
                 if command == "connect":
                     connection_number += 1
                     connection_list.append(connection_number)
-                    #grabs client IP adresses, depends on input string
                     connection_list[connection_number] = str(server)[2:16]
-                    #print(connection_list[n])
-                    
 
             except socket.timeout:
                 if not connection_list and command == "connect":
@@ -161,7 +155,7 @@ def connect():
     sock.settimeout(1)
     global connection_number
     connection_number = -1
-    acknowledge("connect")
+    process_data("connect")
     tk.Label(window, text="{0} camera(s) connected".format(connection_number + 1)).grid(column=1, row=7, sticky=W)
     
     if connection_check() == 1:
@@ -182,7 +176,7 @@ def photo():
                 print ('sending "%s"' % message)
 
                 # Look for responses from all recipients
-                acknowledge(message)
+                process_data(message)
                 return (1)
             print("Parameters out of range, max 50 photos at a 5 second delay.")
             return(99)
@@ -244,7 +238,7 @@ def sync():
 def reload():
     sock.settimeout(1)
     if connection_check() == 1:
-        acknowledge("reload")
+        process_data("reload")
         return (1)
     return (404)
         
@@ -256,7 +250,7 @@ def kill():
             print("Kill aborted")
             return(2)
         else:
-            acknowledge("kill")
+            process_data("kill")
             return (1)
     return (404)
 
@@ -268,7 +262,7 @@ def preview():
         print("No camera selected, please select a camera")
         return 404
     
-    acknowledge("preview")
+    process_data("preview")
     preview_button.config(text="Stop", bg="red", command = lambda: button(7))
     print("{0} preview, press stop to cancel".format (p_menu.get()))
     urllib.request.urlcleanup()
@@ -315,7 +309,7 @@ def button(command_number):
     if command_number == 7:
         preview_flag = 1
         time.sleep(0.1)
-        threading.Thread(target=acknowledge("stop_preview"))
+        threading.Thread(target=process_data("stop_preview"))
     elif current_thread.isAlive():
         print("Process still running, please wait")
     else:
